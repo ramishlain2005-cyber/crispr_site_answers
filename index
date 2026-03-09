@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Medical Results Portal</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1e40af;
+            --secondary: #64748b;
+            --success: #22c55e;
+            --danger: #ef4444;
+            --background: #f8fafc;
+            --surface: #ffffff;
+            --text: #1e293b;
+            --text-light: #64748b;
+            --radius: 16px;
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --safe-top: env(safe-area-inset-top, 25px);
+            --safe-bottom: env(safe-area-inset-bottom, 20px);
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            font-family: Helvetica, Arial, sans-serif;
+            background-color: var(--background);
+            color: var(--text);
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
+            overflow: hidden;
+            padding: var(--safe-top) 16px var(--safe-bottom) 16px;
+        }
+
+        #app-container {
+            width: min(90vw, 500px);
+            max-height: 90vh;
+            background: var(--surface);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .view {
+            display: none;
+            flex-direction: column;
+            padding: clamp(1.25rem, 5vw, 2rem);
+            overflow-y: auto;
+            width: 100%;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .view.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h1 {
+            font-size: clamp(1.5rem, 6vw, 2rem);
+            margin: 0 0 0.5rem 0;
+            color: var(--primary);
+            text-align: center;
+        }
+
+        p.subtitle {
+            text-align: center;
+            color: var(--text-light);
+            margin-bottom: 1.5rem;
+            font-size: 0.9rem;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.4rem;
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: var(--secondary);
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 1rem;
+            transition: border-color 0.2s;
+            outline: none;
+            background: #fff;
+        }
+
+        input:focus {
+            border-color: var(--primary);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 0.5rem;
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:active {
+            background-color: var(--primary-dark);
+            transform: scale(0.98);
+        }
+
+        .btn-success {
+            background-color: var(--success);
+            color: white;
+        }
+
+        .btn-outline {
+            background-color: transparent;
+            border: 2px solid var(--primary);
+            color: var(--primary);
+            margin-top: 1rem;
+        }
+
+        .btn-ghost {
+            background: none;
+            color: var(--secondary);
+            font-size: 0.9rem;
+            text-decoration: underline;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .status-positive { background: #fee2e2; color: #ef4444; }
+        .status-negative { background: #dcfce7; color: #22c55e; }
+
+        .result-card {
+            background: #f1f5f9;
+            padding: 1.5rem;
+            border-radius: 16px;
+            margin-top: 1rem;
+            border-left: 4px solid var(--primary);
+        }
+
+        .result-item {
+            margin-bottom: 1rem;
+        }
+
+        .result-label {
+            font-size: 0.75rem;
+            color: var(--text-light);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .result-value {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .home-options {
+            display: grid;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .admin-list {
+            margin-top: 1.5rem;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 1rem;
+        }
+
+        .admin-list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 0.85rem;
+        }
+
+        .admin-list-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .admin-list-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-icon {
+            background: #f1f5f9;
+            border: none;
+            border-radius: 8px;
+            padding: 8px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-icon:active {
+            background: #e2e8f0;
+        }
+
+        .alert {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+            text-align: center;
+            display: none;
+        }
+
+        .alert-error { background: #fee2e2; color: #b91c1c; }
+        .alert-success { background: #dcfce7; color: #15803d; }
+
+        .toggle-group {
+            display: flex;
+            gap: 10px;
+        }
+        .toggle-btn {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        .toggle-btn.active-pos { border-color: var(--danger); color: var(--danger); background: #fff5f5; }
+        .toggle-btn.active-neg { border-color: var(--success); color: var(--success); background: #f0fff4; }
+
+        #sms-prompt {
+            display: none;
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            padding: 12px;
+            border-radius: 12px;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="app-container">
+        <!-- Home View -->
+        <div id="view-home" class="view active">
+            <h1>🏥 MedPortal</h1>
+            <p class="subtitle">Secure Medical Results Access</p>
+            <div class="home-options">
+                <button class="btn btn-primary" onclick="navigateTo('view-patient-lookup')">
+                    <span>🔍</span> Patient Portal
+                </button>
+                <button class="btn btn-outline" onclick="navigateTo('view-admin-login')">
+                    <span>🔑</span> Admin Login
+                </button>
+            </div>
+        </div>
+
+        <!-- Admin Login View -->
+        <div id="view-admin-login" class="view">
+            <h1>Admin Login</h1>
+            <p class="subtitle">Enter your credentials to manage records</p>
+            <div id="login-alert" class="alert alert-error">Invalid credentials</div>
+            <div class="form-group">
+                <label>Nickname</label>
+                <input type="text" id="admin-user" placeholder="Enter nickname">
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="admin-pass" placeholder="Enter password">
+            </div>
+            <button class="btn btn-primary" onclick="handleLogin()">Login</button>
+            <button class="btn btn-ghost" onclick="navigateTo('view-home')">Back to Home</button>
+        </div>
+
+        <!-- Admin Dashboard View -->
+        <div id="view-admin-dashboard" class="view">
+            <h1>Add Record</h1>
+            <p class="subtitle">Register a new patient result</p>
+            
+            <div id="admin-alert" class="alert alert-success">Record saved successfully!</div>
+            
+            <div id="sms-prompt">
+                <p style="margin: 0 0 8px 0; font-size: 0.85rem; font-weight: 600;">Record Saved!</p>
+                <button class="btn btn-success" id="btn-send-now" onclick="sendSMSFromPrompt()">
+                    <span>📲</span> Send SMS to Patient
+                </button>
+            </div>
+            
+            <div class="form-group">
+                <label>Patient Full Name</label>
+                <input type="text" id="p-name" placeholder="John Doe">
+            </div>
+            <div class="form-group">
+                <label>Patient ID (9 Digits)</label>
+                <input type="text" id="p-id" maxlength="9" placeholder="123456789" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+            </div>
+            <div class="form-group">
+                <label>Result Status</label>
+                <div class="toggle-group">
+                    <div id="btn-pos" class="toggle-btn" onclick="setStatus('Positive')">Positive</div>
+                    <div id="btn-neg" class="toggle-btn" onclick="setStatus('Negative')">Negative</div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Phone Number</label>
+                <input type="tel" id="p-phone" placeholder="050-000-0000">
+            </div>
+            
+            <button class="btn btn-primary" onclick="savePatientRecord()">
+                <span>📤</span> Save Record
+            </button>
+            
+            <div class="admin-list">
+                <label>Recent Entries & Notifications</label>
+                <div id="recent-list"></div>
+            </div>
+
+            <button class="btn btn-ghost" onclick="logout()">Logout</button>
+        </div>
+
+        <!-- Patient Lookup View -->
+        <div id="view-patient-lookup" class="view">
+            <h1>Patient Portal</h1>
+            <p class="subtitle">Enter your ID to view your medical note</p>
+            <div id="lookup-alert" class="alert alert-error">No record found for this ID</div>
+            <div class="form-group">
+                <label>Identification Number (9 Digits)</label>
+                <input type="text" id="lookup-id" maxlength="9" placeholder="123456789" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+            </div>
+            <button class="btn btn-primary" onclick="lookupPatient()">
+                <span>🔎</span> View My Results
+            </button>
+            <button class="btn btn-ghost" onclick="navigateTo('view-home')">Back</button>
+        </div>
+
+        <!-- Patient Result View -->
+        <div id="view-patient-result" class="view">
+            <h1>Medical Note</h1>
+            <p class="subtitle">Confidential Information</p>
+            
+            <div class="result-card" id="result-display">
+                <!-- Content injected by JS -->
+            </div>
+
+            <p style="font-size: 0.8rem; color: var(--text-light); text-align: center; margin-top: 2rem;">
+                ℹ️ This is an official electronic record. Please contact your physician for further guidance.
+            </p>
+            
+            <button class="btn btn-primary" onclick="navigateTo('view-home')" style="margin-top: 1rem;">Done</button>
+        </div>
+    </div>
+
+    <script>
+        const APP_STORAGE_KEY = 'MED_PORTAL_DATA_V2';
+        let patients = [];
+        let selectedStatus = null;
+        let lastSavedPatientId = null;
+
+        // Initialize App
+        window.addEventListener('load', () => {
+            loadData();
+            document.body.addEventListener('dblclick', (e) => e.preventDefault());
+        });
+
+        function loadData() {
+            const saved = localStorage.getItem(APP_STORAGE_KEY + '_data');
+            if (saved) {
+                patients = JSON.parse(saved);
+                updateRecentList();
+            }
+        }
+
+        function saveData() {
+            localStorage.setItem(APP_STORAGE_KEY + '_data', JSON.stringify(patients));
+            updateRecentList();
+        }
+
+        function navigateTo(viewId) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.getElementById(viewId).classList.add('active');
+            // Reset alerts and prompts
+            document.querySelectorAll('.alert').forEach(a => a.style.display = 'none');
+            const smsPrompt = document.getElementById('sms-prompt');
+            if (smsPrompt) smsPrompt.style.display = 'none';
+        }
+
+        // Admin Logic
+        function handleLogin() {
+            const user = document.getElementById('admin-user').value;
+            const pass = document.getElementById('admin-pass').value;
+            const alert = document.getElementById('login-alert');
+
+            if (user === 'test123' && pass === '123') {
+                navigateTo('view-admin-dashboard');
+                document.getElementById('admin-user').value = '';
+                document.getElementById('admin-pass').value = '';
+            } else {
+                alert.style.display = 'block';
+            }
+        }
+
+        function setStatus(status) {
+            selectedStatus = status;
+            const posBtn = document.getElementById('btn-pos');
+            const negBtn = document.getElementById('btn-neg');
+            
+            posBtn.classList.remove('active-pos');
+            negBtn.classList.remove('active-neg');
+
+            if (status === 'Positive') posBtn.classList.add('active-pos');
+            else negBtn.classList.add('active-neg');
+        }
+
+        function savePatientRecord() {
+            const name = document.getElementById('p-name').value.trim();
+            const id = document.getElementById('p-id').value.trim();
+            const phone = document.getElementById('p-phone').value.trim();
+            const alert = document.getElementById('admin-alert');
+            const smsPrompt = document.getElementById('sms-prompt');
+
+            if (!name || id.length !== 9 || !selectedStatus || !phone) {
+                alert.textContent = "Please fill all fields correctly (ID must be 9 digits)";
+                alert.className = "alert alert-error";
+                alert.style.display = "block";
+                return;
+            }
+
+            const newPatient = {
+                id: id,
+                name: name,
+                status: selectedStatus,
+                phone: phone,
+                date: new Date().toLocaleDateString()
+            };
+
+            // Check if ID already exists, update if it does
+            const index = patients.findIndex(p => p.id === id);
+            if (index !== -1) {
+                patients[index] = newPatient;
+            } else {
+                patients.push(newPatient);
+            }
+
+            saveData();
+            lastSavedPatientId = id;
+            
+            alert.textContent = "Record saved successfully!";
+            alert.className = "alert alert-success";
+            alert.style.display = "block";
+            smsPrompt.style.display = "block";
+
+            // Clear form
+            document.getElementById('p-name').value = '';
+            document.getElementById('p-id').value = '';
+            document.getElementById('p-phone').value = '';
+            selectedStatus = null;
+            document.getElementById('btn-pos').classList.remove('active-pos');
+            document.getElementById('btn-neg').classList.remove('active-neg');
+
+            setTimeout(() => alert.style.display = 'none', 5000);
+        }
+
+        function sendSMS(id) {
+            const p = patients.find(p => p.id === id);
+            if (!p) return;
+            
+            // Clean phone number (remove non-digits)
+            const cleanPhone = p.phone.replace(/\D/g, '');
+            const message = `MedPortal: Hello ${p.name}, your medical test result (ID: ${p.id}) is ${p.status.toUpperCase()}. Date: ${p.date}. Please check the portal for details.`;
+            
+            // Trigger native SMS app
+            const smsUrl = `sms:${cleanPhone}?body=${encodeURIComponent(message)}`;
+            window.location.href = smsUrl;
+        }
+
+        function sendSMSFromPrompt() {
+            if (lastSavedPatientId) {
+                sendSMS(lastSavedPatientId);
+                document.getElementById('sms-prompt').style.display = 'none';
+            }
+        }
+
+        function updateRecentList() {
+            const list = document.getElementById('recent-list');
+            list.innerHTML = '';
+            
+            // Show last 5 entries
+            patients.slice(-5).reverse().forEach(p => {
+                const div = document.createElement('div');
+                div.className = 'admin-list-item';
+                div.innerHTML = `
+                    <div class="admin-list-info">
+                        <span style="font-weight:600">${p.name}</span>
+                        <span style="color:var(--text-light); font-size:0.75rem">${p.id} • ${p.phone}</span>
+                    </div>
+                    <div class="admin-list-actions">
+                        <span class="status-badge ${p.status === 'Positive' ? 'status-positive' : 'status-negative'}">${p.status}</span>
+                        <button class="btn-icon" onclick="sendSMS('${p.id}')" title="Send SMS">📲</button>
+                    </div>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        function logout() {
+            navigateTo('view-home');
+        }
+
+        // Patient Logic
+        function lookupPatient() {
+            const id = document.getElementById('lookup-id').value.trim();
+            const alert = document.getElementById('lookup-alert');
+            
+            if (id.length !== 9) {
+                alert.textContent = "ID must be exactly 9 digits";
+                alert.style.display = "block";
+                return;
+            }
+
+            const patient = patients.find(p => p.id === id);
+
+            if (patient) {
+                displayResult(patient);
+                navigateTo('view-patient-result');
+                document.getElementById('lookup-id').value = '';
+            } else {
+                alert.textContent = "No record found for this ID";
+                alert.style.display = "block";
+            }
+        }
+
+        function displayResult(p) {
+            const container = document.getElementById('result-display');
+            container.innerHTML = `
+                <div class="result-item">
+                    <div class="result-label">Patient Name</div>
+                    <div class="result-value">${p.name}</div>
+                </div>
+                <div class="result-item">
+                    <div class="result-label">ID Number</div>
+                    <div class="result-value">${p.id}</div>
+                </div>
+                <div class="result-item">
+                    <div class="result-label">Test Result</div>
+                    <div style="margin-top:5px">
+                        <span class="status-badge ${p.status === 'Positive' ? 'status-positive' : 'status-negative'}" style="font-size: 1.2rem; padding: 8px 20px;">
+                            ${p.status}
+                        </span>
+                    </div>
+                </div>
+                <div class="result-item">
+                    <div class="result-label">Contact Number</div>
+                    <div class="result-value">${p.phone}</div>
+                </div>
+                <div class="result-item" style="margin-bottom:0">
+                    <div class="result-label">Date of Record</div>
+                    <div class="result-value">${p.date}</div>
+                </div>
+            `;
+        }
+
+        // Prevent Android Focus Issues
+        document.addEventListener("focusin", function(e) {
+            if (e.target.tagName === "INPUT" && e.target.type !== "text" && e.target.type !== "password" && e.target.type !== "tel") {
+                setTimeout(() => e.target.blur(), 100);
+            }
+        });
+    </script>
+</body>
+</html>
